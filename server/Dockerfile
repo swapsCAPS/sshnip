@@ -5,7 +5,6 @@ WORKDIR /app
 ## copy the pi binary
 COPY /bin/clipboard-server_aarch64-unknown-linux-gnu ./
 
-## copy runtime assets which may or may not exist
-COPY Rocket.tom[l] ./static
+COPY Rocket.toml ./
 
 CMD [ "./clipboard-server_aarch64-unknown-linux-gnu" ]
