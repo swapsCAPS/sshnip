@@ -35,10 +35,10 @@ class MainActivity : AppCompatActivity() {
   private var url: String = ""
   private var apiKey: String = ""
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+  override fun onResume() {
+    super.onResume()
 
-    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
 
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
       val request = Request.Builder()
         .url(url)
         .post(requestBody)
-        .addHeader("apikey", apiKey)
+        .addHeader("x-api-key", apiKey)
         .build()
 
       // Execute the request
