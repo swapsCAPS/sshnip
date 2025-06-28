@@ -1,8 +1,8 @@
 package nl.swapsCAPS.sshnip
 
+import android.content.ClipDescription.MIMETYPE_TEXT_PLAIN
 import android.content.ClipboardManager
 import android.content.Context
-import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doOnTextChanged
@@ -37,29 +37,48 @@ class MainActivity : AppCompatActivity() {
 
   override fun onResume() {
     super.onResume()
-
-    val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-
     binding = ActivityMainBinding.inflate(layoutInflater)
     setContentView(binding.root)
 
-    lifecycleScope.launch {
-      val preferences = dataStore.data.first()
 
-      apiKey = preferences[API_KEY_KEY].orEmpty()
-      url = preferences[URL_KEY].orEmpty()
-      val logLines = preferences[LOG_KEY].orEmpty()
+    binding.root.post {
+      lifecycleScope.launch {
+        val preferences = dataStore.data.first()
 
-      binding.editTextTexApiKey.setText(apiKey)
-      binding.editTextTextURL.setText(url)
-      binding.resultView.setText(logLines)
+        apiKey = preferences[API_KEY_KEY].orEmpty()
+        url = preferences[URL_KEY].orEmpty()
+        val logLines = preferences[LOG_KEY].orEmpty()
 
-      val clipData = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+        binding.editTextTexApiKey.setText(apiKey)
+        binding.editTextTextURL.setText(url)
+        binding.resultView.setText(logLines)
 
-      if (url.isNotEmpty() && apiKey.isNotEmpty() && !clipData.isNullOrEmpty()) {
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+
+        if (!clipboard.hasPrimaryClip()) {
+          Toast.makeText(this@MainActivity, "Nothing on clipboard", Toast.LENGTH_SHORT).show()
+          return@launch
+        }
+
+        if (clipboard.primaryClipDescription?.hasMimeType(MIMETYPE_TEXT_PLAIN) != true) {
+          Toast.makeText(
+            this@MainActivity, "Not text: ${clipboard.primaryClipDescription}", Toast.LENGTH_SHORT
+          ).show()
+          return@launch
+        }
+
+        if (url.isEmpty() || apiKey.isEmpty()) {
+          Toast.makeText(
+            this@MainActivity, "Please set up URL and API key", Toast.LENGTH_SHORT
+          ).show()
+          return@launch
+        }
+
+        val clipData = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+
         var text = ""
         try {
-          val response = send(url, apiKey, clipData)
+          val response = send(url, apiKey, clipData!!)
           if (response.isSuccessful) {
             Toast.makeText(this@MainActivity, "Sent!", Toast.LENGTH_SHORT).show()
             finish()
@@ -109,11 +128,8 @@ class MainActivity : AppCompatActivity() {
       val requestBody = payload.toRequestBody("text/plain".toMediaTypeOrNull())
 
       // Build the request with headers
-      val request = Request.Builder()
-        .url(url)
-        .post(requestBody)
-        .addHeader("x-api-key", apiKey)
-        .build()
+      val request =
+        Request.Builder().url(url).post(requestBody).addHeader("x-api-key", apiKey).build()
 
       // Execute the request
       return@withContext client.newCall(request).execute()
