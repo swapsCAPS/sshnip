@@ -19,9 +19,19 @@ async fn post(
     status::Created::new("/clip").body(String::from("clipped"))
 }
 
-#[get("/clip")]
-async fn get(_api_key: request_guards::ApiKey<'_>, clip: &State<Arc<Mutex<String>>>) -> String {
-    clip.lock().unwrap().to_string()
+#[get("/clip?<keep>")]
+async fn get(
+    _api_key: request_guards::ApiKey<'_>,
+    clip: &State<Arc<Mutex<String>>>,
+    keep: Option<String>,
+) -> String {
+    let value = clip.lock().unwrap().to_string();
+
+    if keep.unwrap_or(String::from("false")) != "true" {
+        *clip.lock().unwrap() = String::from("");
+    }
+
+    value
 }
 
 #[launch]
